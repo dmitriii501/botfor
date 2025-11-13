@@ -1,0 +1,20 @@
+[Unit]
+Description=Telegram Anketa Bot (aiogram)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=bot
+Group=bot
+WorkingDirectory=/opt/anketa-bot
+EnvironmentFile=/opt/anketa-bot/.env
+ExecStart=/opt/anketa-bot/venv/bin/python /opt/anketa-bot/bot.py
+Restart=on-failure
+RestartSec=5s
+KillSignal=SIGINT
+TimeoutStopSec=30s
+
+[Install]
+WantedBy=multi-user.target
+
