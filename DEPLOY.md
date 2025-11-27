@@ -42,6 +42,8 @@ git push origin main
    sudo -u bot git pull origin main
    ```
 
+   **Если запрашивает пароль**, используйте один из вариантов ниже.
+
 3. Обновите зависимости и перезапустите сервис:
    ```bash
    sudo -u bot bash scripts/post-update.sh
@@ -51,6 +53,83 @@ git push origin main
    ```bash
    sudo systemctl status telegram-anketa-bot.service
    ```
+
+### Решение проблемы с паролем при git pull
+
+Если при `git pull` запрашивается пароль, это означает, что репозиторий использует HTTPS вместо SSH. Есть несколько решений:
+
+#### Вариант 1: Использовать SSH вместо HTTPS (рекомендуется)
+
+1. Проверьте текущий remote URL:
+   ```bash
+   cd /opt/anketa-bot
+   sudo -u bot git remote -v
+   ```
+
+2. Если используется HTTPS (https://github.com/...), переключите на SSH:
+   ```bash
+   sudo -u bot git remote set-url origin git@github.com:ВАШ_USERNAME/НАЗВАНИЕ_РЕПОЗИТОРИЯ.git
+   ```
+
+3. Настройте SSH ключ для пользователя bot:
+   ```bash
+   # Переключитесь на пользователя bot
+   sudo -u bot bash
+   
+   # Создайте SSH ключ (если еще нет)
+   ssh-keygen -t ed25519 -C "bot@vps" -f ~/.ssh/id_ed25519 -N ""
+   
+   # Скопируйте публичный ключ
+   cat ~/.ssh/id_ed25519.pub
+   ```
+   
+4. Добавьте публичный ключ в GitHub:
+   - Зайдите на GitHub → Settings → SSH and GPG keys → New SSH key
+   - Вставьте содержимое `~/.ssh/id_ed25519.pub`
+   
+5. Проверьте подключение:
+   ```bash
+   ssh -T git@github.com
+   ```
+   
+6. Теперь git pull должен работать без пароля:
+   ```bash
+   exit  # выйти из сессии bot
+   cd /opt/anketa-bot
+   sudo -u bot git pull origin main
+   ```
+
+#### Вариант 2: Использовать Personal Access Token (если HTTPS)
+
+1. Создайте токен на GitHub:
+   - GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
+   - Generate new token (classic)
+   - Выберите права: `repo` (полный доступ к репозиториям)
+   - Скопируйте токен
+
+2. Настройте git credential helper для пользователя bot:
+   ```bash
+   sudo -u bot git config --global credential.helper store
+   ```
+
+3. При первом `git pull` введите:
+   - Username: ваш GitHub username
+   - Password: вставьте токен (не пароль!)
+
+4. Или настройте URL с токеном напрямую:
+   ```bash
+   cd /opt/anketa-bot
+   sudo -u bot git remote set-url origin https://ВАШ_ТОКЕН@github.com/ВАШ_USERNAME/НАЗВАНИЕ_РЕПОЗИТОРИЯ.git
+   ```
+
+#### Вариант 3: Использовать sudo с опцией -i (временное решение)
+
+Если нужно быстро обновить без настройки:
+```bash
+sudo -i -u bot bash -c "cd /opt/anketa-bot && git pull origin main"
+```
+
+Но это все равно может запросить пароль, если используется HTTPS.
 
 ### Полная инструкция по обновлению
 
@@ -82,6 +161,41 @@ sudo systemctl status telegram-anketa-bot.service
 
 # 9. Просмотрите логи для проверки
 journalctl -u telegram-anketa-bot.service -n 50
+```
+
+### Настройка sudoers для пользователя bot (решение проблемы с паролем)
+
+Если `post-update.sh` запрашивает пароль, нужно настроить права для пользователя bot:
+
+1. **Создайте файл sudoers для пользователя bot**:
+   ```bash
+   sudo visudo -f /etc/sudoers.d/bot
+   ```
+
+2. **Добавьте следующую строку** (позволяет bot перезапускать только свой сервис без пароля):
+   ```
+   bot ALL=(ALL) NOPASSWD: /bin/systemctl restart telegram-anketa-bot.service, /bin/systemctl status telegram-anketa-bot.service
+   ```
+
+3. **Сохраните и закройте** (в nano: Ctrl+X, затем Y, затем Enter)
+
+4. **Проверьте синтаксис**:
+   ```bash
+   sudo visudo -c
+   ```
+
+5. **Теперь скрипт должен работать без пароля**:
+   ```bash
+   cd /opt/anketa-bot
+   sudo -u bot bash scripts/post-update.sh
+   ```
+
+**Альтернативный вариант**: Если не хотите настраивать sudoers, можно запускать обновление в два этапа:
+```bash
+cd /opt/anketa-bot
+sudo -u bot git pull origin main
+sudo -u bot bash -c "source venv/bin/activate && pip install --upgrade pip && pip install --upgrade -r requirements.txt && deactivate"
+sudo systemctl restart telegram-anketa-bot.service
 ```
 
 ### Если возникли проблемы

@@ -19,5 +19,14 @@ pip install --upgrade -r "$REPO_DIR/requirements.txt"
 
 deactivate
 
-sudo systemctl restart "$SERVICE_NAME"
+# Перезапуск сервиса
+# Если sudo настроен через sudoers, будет работать без пароля
+# Иначе нужно запускать скрипт от root или настроить sudoers
+if sudo -n systemctl restart "$SERVICE_NAME" 2>/dev/null; then
+  echo "Service $SERVICE_NAME restarted successfully"
+else
+  echo "Warning: Could not restart service automatically (may require password or sudoers configuration)"
+  echo "Please run manually: sudo systemctl restart $SERVICE_NAME"
+  exit 0  # Не считаем это критической ошибкой
+fi
 
