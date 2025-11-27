@@ -7,7 +7,7 @@ from states import FormStates
 from keyboards import (
     get_section_keyboard, get_yes_no_keyboard, get_gender_keyboard,
     get_add_more_keyboard, get_skip_keyboard, get_final_confirmation_keyboard,
-    get_main_keyboard
+    get_main_keyboard, get_citizenship_keyboard
 )
 from utils import save_form_data, load_form_data, format_form_preview
 from database import init_database
@@ -151,43 +151,7 @@ async def section_3_contacts(callback: CallbackQuery, state: FSMContext):
 
 
 async def section_4_documents(callback: CallbackQuery, state: FSMContext):
-    """Раздел 4: Документы и разрешения"""
-    await callback.answer()
-    
-    # Загружаем данные из БД, если есть
-    user_id = callback.from_user.id
-    existing_data = load_form_data(user_id)
-    if existing_data:
-        await state.update_data(form_data=existing_data)
-    
-    await state.set_state(FormStates.waiting_for_medical_book)
-    await callback.message.answer(
-        f"{get_section_emoji(4)} Раздел 4: Документы и разрешения\n\n"
-        "Проверим наличие необходимых документов. Есть ли у вас медицинская книжка?",
-        reply_markup=get_yes_no_keyboard()
-    )
-
-
-async def section_5_education(callback: CallbackQuery, state: FSMContext):
-    """Раздел 5: Образование"""
-    await callback.answer()
-    
-    # Загружаем данные из БД, если есть
-    user_id = callback.from_user.id
-    existing_data = load_form_data(user_id)
-    if existing_data:
-        await state.update_data(form_data=existing_data)
-    
-    await state.set_state(FormStates.waiting_for_education_institution)
-    await callback.message.answer(
-        f"{get_section_emoji(5)} Раздел 5: Образование\n\n"
-        "Укажите информацию об образовании. Введите название учебного заведения:",
-        reply_markup=get_skip_keyboard()
-    )
-
-
-async def section_6_work_experience(callback: CallbackQuery, state: FSMContext):
-    """Раздел 6: Опыт работы"""
+    """Раздел 4: Документы"""
     await callback.answer()
     
     # Загружаем данные из БД, если есть
@@ -198,20 +162,18 @@ async def section_6_work_experience(callback: CallbackQuery, state: FSMContext):
     
     data = await state.get_data()
     form_data = data.get("form_data", {})
-    if "work_experience" not in form_data:
-        form_data["work_experience"] = []
-    await state.update_data(form_data=form_data)
+    citizenship_type = form_data.get("citizenship_type", "")
     
-    await state.set_state(FormStates.waiting_for_work_period)
+    await state.set_state(FormStates.waiting_for_medical_book)
     await callback.message.answer(
-        f"{get_section_emoji(6)} Раздел 6: Опыт работы\n\n"
-        "Расскажите о вашем профессиональном опыте. Введите период работы (например: 01.2020 - 12.2023):",
-        reply_markup=get_skip_keyboard()
+        f"{get_section_emoji(4)} Раздел 4: Документы\n\n"
+        "Проверим наличие необходимых документов. Есть ли у вас медицинская книжка?",
+        reply_markup=get_yes_no_keyboard()
     )
 
 
-async def section_7_additional(callback: CallbackQuery, state: FSMContext):
-    """Раздел 7: Дополнительно"""
+async def section_5_readiness(callback: CallbackQuery, state: FSMContext):
+    """Раздел 5: Готовность к работе"""
     await callback.answer()
     
     # Загружаем данные из БД, если есть
@@ -220,16 +182,16 @@ async def section_7_additional(callback: CallbackQuery, state: FSMContext):
     if existing_data:
         await state.update_data(form_data=existing_data)
     
-    await state.set_state(FormStates.waiting_for_driver_license)
+    await state.set_state(FormStates.waiting_for_vakhta_start_date)
     await callback.message.answer(
-        f"{get_section_emoji(7)} Раздел 7: Дополнительно\n\n"
-        "Уточним дополнительные сведения. Есть ли у вас водительское удостоверение?",
-        reply_markup=get_yes_no_keyboard()
+        f"{get_section_emoji(5)} Раздел 5: Готовность к работе\n\n"
+        "Когда вы готовы начать вахту? (укажите дату или примерный период):",
+        reply_markup=get_skip_keyboard()
     )
 
 
-async def section_8_consents(callback: CallbackQuery, state: FSMContext):
-    """Раздел 8: Согласия"""
+async def section_6_consents(callback: CallbackQuery, state: FSMContext):
+    """Раздел 6: Согласия"""
     await callback.answer()
     
     # Загружаем данные из БД, если есть
@@ -240,14 +202,14 @@ async def section_8_consents(callback: CallbackQuery, state: FSMContext):
     
     await state.set_state(FormStates.waiting_for_personal_data_consent)
     await callback.message.answer(
-        f"{get_section_emoji(8)} Раздел 8: Согласия\n\n"
+        f"{get_section_emoji(6)} Раздел 6: Согласия\n\n"
         "Необходимо ваше согласие на обработку данных. Согласны ли вы на обработку персональных данных?",
         reply_markup=get_yes_no_keyboard()
     )
 
 
-async def section_9_confirmations(callback: CallbackQuery, state: FSMContext):
-    """Раздел 9: Подтверждения"""
+async def section_7_comments(callback: CallbackQuery, state: FSMContext):
+    """Раздел 7: Комментарии"""
     await callback.answer()
     
     # Загружаем данные из БД, если есть
@@ -256,30 +218,25 @@ async def section_9_confirmations(callback: CallbackQuery, state: FSMContext):
     if existing_data:
         await state.update_data(form_data=existing_data)
     
-    await state.set_state(FormStates.waiting_for_tuberculosis_confirmation)
-    await callback.message.answer(
-        f"{get_section_emoji(9)} Раздел 9: Подтверждения\n\n"
-        "Требуется подтверждение важных сведений. Подтверждаете ли вы, что у вас нет таких заболеваний как туберкулез, сифилис, ВИЧ?",
-        reply_markup=get_yes_no_keyboard()
-    )
-
-
-async def section_10_comments(callback: CallbackQuery, state: FSMContext):
-    """Раздел 10: Комментарии"""
-    await callback.answer()
+    data = await state.get_data()
+    form_data = data.get("form_data", {})
+    citizenship_type = form_data.get("citizenship_type", "")
     
-    # Загружаем данные из БД, если есть
-    user_id = callback.from_user.id
-    existing_data = load_form_data(user_id)
-    if existing_data:
-        await state.update_data(form_data=existing_data)
-    
-    await state.set_state(FormStates.waiting_for_comments)
-    await callback.message.answer(
-        f"{get_section_emoji(10)} Раздел 10: Комментарии / вопросы\n\n"
-        "Последний раздел. Если у вас есть дополнительные комментарии или вопросы, укажите их здесь (необязательно):",
-        reply_markup=get_skip_keyboard()
-    )
+    # Если иностранец, сначала показываем подтверждения
+    if citizenship_type == "Иностранец":
+        await state.set_state(FormStates.waiting_for_tuberculosis_confirmation)
+        await callback.message.answer(
+            f"{get_section_emoji(7)} Раздел 7: Подтверждения (для иностранных граждан)\n\n"
+            "Требуется подтверждение важных сведений. Подтверждаете ли вы, что у вас нет таких заболеваний как туберкулез, сифилис, ВИЧ?",
+            reply_markup=get_yes_no_keyboard()
+        )
+    else:
+        await state.set_state(FormStates.waiting_for_comments)
+        await callback.message.answer(
+            f"{get_section_emoji(7)} Раздел 7: Комментарии / вопросы\n\n"
+            "Если у вас есть дополнительные комментарии или вопросы, укажите их здесь (необязательно):",
+            reply_markup=get_skip_keyboard()
+        )
 
 
 async def finish_form_handler(callback: CallbackQuery, state: FSMContext):
@@ -423,10 +380,16 @@ async def process_gender(message: Message, state: FSMContext):
     form_data["personal_data"]["gender"] = gender
     await state.update_data(form_data=form_data)
     
-    await state.set_state(FormStates.waiting_for_photo_3x4)
+    # Сохраняем в БД
+    user_id = message.from_user.id
+    save_form_data(user_id, form_data, save_to_sheets=False)
+    
+    percentage, progress_bar = calculate_progress(form_data)
     await message.answer(
-        "Загрузите фото 3×4 (отправьте фото):",
-        reply_markup=get_skip_keyboard()
+        f"{get_completion_message('Личные данные')}\n\n"
+        f"📊 Прогресс: {progress_bar} {percentage}%\n"
+        f"{get_motivational_message(percentage)}",
+        reply_markup=get_section_keyboard()
     )
 
 
@@ -649,8 +612,8 @@ async def process_passport_photo(message: Message, state: FSMContext):
 async def process_phone(message: Message, state: FSMContext):
     """Обработка телефона"""
     if message.text == "⏭️ Пропустить":
-        await message.answer("Пропущено. Введите электронную почту:")
-        await state.set_state(FormStates.waiting_for_email)
+        await message.answer("Пропущено. Выберите ваше гражданство:")
+        await state.set_state(FormStates.waiting_for_citizenship_choice)
         return
     
     data = await state.get_data()
@@ -660,54 +623,43 @@ async def process_phone(message: Message, state: FSMContext):
     form_data["contacts"]["phone"] = message.text
     await state.update_data(form_data=form_data)
     
-    await state.set_state(FormStates.waiting_for_email)
-    await message.answer("Введите электронную почту:", reply_markup=get_skip_keyboard())
+    await state.set_state(FormStates.waiting_for_citizenship_choice)
+    await message.answer(
+        "Выберите ваше гражданство:",
+        reply_markup=get_citizenship_keyboard()
+    )
 
 
-async def process_email(message: Message, state: FSMContext):
-    """Обработка email"""
-    if message.text == "⏭️ Пропустить":
-        await message.answer("Пропущено. Введите соцсети / мессенджеры:")
-        await state.set_state(FormStates.waiting_for_social_media)
+async def process_citizenship_choice(message: Message, state: FSMContext):
+    """Обработка выбора гражданства"""
+    if "России" in message.text or "Россия" in message.text:
+        citizenship_type = "Россия"
+    elif "Иностранный" in message.text:
+        citizenship_type = "Иностранец"
+    else:
+        await message.answer("Пожалуйста, выберите один из предложенных вариантов.")
         return
     
     data = await state.get_data()
     form_data = data.get("form_data", {})
-    form_data["contacts"]["email"] = message.text
+    if "citizenship_type" not in form_data:
+        form_data["citizenship_type"] = citizenship_type
+    else:
+        form_data["citizenship_type"] = citizenship_type
     await state.update_data(form_data=form_data)
     
-    await state.set_state(FormStates.waiting_for_social_media)
-    await message.answer("Введите соцсети / мессенджеры:", reply_markup=get_skip_keyboard())
-
-
-async def process_social_media(message: Message, state: FSMContext):
-    """Обработка соцсетей"""
-    if message.text == "⏭️ Пропустить":
-        data = await state.get_data()
-        form_data = data.get("form_data", {})
-        percentage, progress_bar = calculate_progress(form_data)
-        await message.answer(
-            f"{get_completion_message('Контактная информация')}\n\n"
-            f"📊 Прогресс: {progress_bar} {percentage}%\n"
-            f"{get_motivational_message(percentage)}",
-            reply_markup=get_section_keyboard()
-        )
-        return
+    # Сохраняем в БД
+    user_id = message.from_user.id
+    save_form_data(user_id, form_data, save_to_sheets=False)
     
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
-    form_data["contacts"]["social_media"] = message.text
-    await state.update_data(form_data=form_data)
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
     percentage, progress_bar = calculate_progress(form_data)
     await message.answer(
+        f"✅ Гражданство выбрано: {citizenship_type}\n\n"
         f"{get_completion_message('Контактная информация')}\n\n"
         f"📊 Прогресс: {progress_bar} {percentage}%\n"
         f"{get_motivational_message(percentage)}",
-            reply_markup=get_section_keyboard()
-        )
+        reply_markup=get_section_keyboard()
+    )
 
 
 # ========== РАЗДЕЛ 4: ДОКУМЕНТЫ И РАЗРЕШЕНИЯ ==========
@@ -728,27 +680,6 @@ async def process_medical_book(message: Message, state: FSMContext):
     form_data["documents"]["medical_book"] = has_medical_book
     await state.update_data(form_data=form_data)
     
-    await state.set_state(FormStates.waiting_for_work_permit)
-    await message.answer(
-        "Есть ли у вас разрешение на работу (для иностранных граждан)?",
-        reply_markup=get_yes_no_keyboard()
-    )
-
-
-async def process_work_permit(message: Message, state: FSMContext):
-    """Обработка разрешения на работу"""
-    if message.text == "⏪ Назад":
-        await state.set_state(FormStates.waiting_for_medical_book)
-        await message.answer("Есть ли у вас медицинская книжка?", reply_markup=get_yes_no_keyboard())
-        return
-    
-    has_permit = "Да" in message.text
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
-    form_data["documents"]["work_permit"] = has_permit
-    await state.update_data(form_data=form_data)
-    
     await state.set_state(FormStates.waiting_for_registration)
     await message.answer(
         "Есть ли у вас регистрация по месту пребывания?",
@@ -759,14 +690,15 @@ async def process_work_permit(message: Message, state: FSMContext):
 async def process_registration(message: Message, state: FSMContext):
     """Обработка регистрации"""
     if message.text == "⏪ Назад":
-        await state.set_state(FormStates.waiting_for_work_permit)
-        await message.answer("Есть ли у вас разрешение на работу?", reply_markup=get_yes_no_keyboard())
+        await state.set_state(FormStates.waiting_for_medical_book)
+        await message.answer("Есть ли у вас медицинская книжка?", reply_markup=get_yes_no_keyboard())
         return
     
     has_registration = "Да" in message.text
     
     data = await state.get_data()
     form_data = data.get("form_data", {})
+    citizenship_type = form_data.get("citizenship_type", "")
     form_data["documents"]["registration"] = has_registration
     await state.update_data(form_data=form_data)
     
@@ -793,13 +725,54 @@ async def process_snils(message: Message, state: FSMContext):
 async def process_inn(message: Message, state: FSMContext):
     """Обработка ИНН"""
     if message.text == "⏭️ Пропустить":
-        await message.answer("Пропущено. Прошли ли вы дактилоскопию?")
-        await state.set_state(FormStates.waiting_for_fingerprinting)
+        data = await state.get_data()
+        form_data = data.get("form_data", {})
+        citizenship_type = form_data.get("citizenship_type", "")
+        
+        # Если иностранец, спрашиваем ID
+        if citizenship_type == "Иностранец":
+            await state.set_state(FormStates.waiting_for_foreigner_id)
+            await message.answer("Введите ID (для иностранных граждан):", reply_markup=get_skip_keyboard())
+        else:
+            # Для граждан РФ переходим к загрузке медкнижки
+            await state.set_state(FormStates.waiting_for_medical_book_file)
+            await message.answer(
+                "Загрузите медицинскую книжку (отправьте файл или фото):",
+                reply_markup=get_skip_keyboard()
+            )
         return
     
     data = await state.get_data()
     form_data = data.get("form_data", {})
+    citizenship_type = form_data.get("citizenship_type", "")
     form_data["documents"]["inn"] = message.text
+    await state.update_data(form_data=form_data)
+    
+    # Если иностранец, спрашиваем ID
+    if citizenship_type == "Иностранец":
+        await state.set_state(FormStates.waiting_for_foreigner_id)
+        await message.answer("Введите ID (для иностранных граждан):", reply_markup=get_skip_keyboard())
+    else:
+        # Для граждан РФ переходим к загрузке медкнижки
+        await state.set_state(FormStates.waiting_for_medical_book_file)
+        await message.answer(
+            "Загрузите медицинскую книжку (отправьте файл или фото):",
+            reply_markup=get_skip_keyboard()
+        )
+
+
+async def process_foreigner_id(message: Message, state: FSMContext):
+    """Обработка ID для иностранцев"""
+    if message.text == "⏭️ Пропустить":
+        await state.set_state(FormStates.waiting_for_fingerprinting)
+        await message.answer("Прошли ли вы дактилоскопию?", reply_markup=get_yes_no_keyboard())
+        return
+    
+    data = await state.get_data()
+    form_data = data.get("form_data", {})
+    if "documents" not in form_data:
+        form_data["documents"] = {}
+    form_data["documents"]["foreigner_id"] = message.text
     await state.update_data(form_data=form_data)
     
     await state.set_state(FormStates.waiting_for_fingerprinting)
@@ -809,8 +782,8 @@ async def process_inn(message: Message, state: FSMContext):
 async def process_fingerprinting(message: Message, state: FSMContext):
     """Обработка дактилоскопии"""
     if message.text == "⏪ Назад":
-        await state.set_state(FormStates.waiting_for_inn)
-        await message.answer("Введите ИНН:")
+        await state.set_state(FormStates.waiting_for_foreigner_id)
+        await message.answer("Введите ID:")
         return
     
     has_fingerprinting = "Да" in message.text
@@ -818,6 +791,48 @@ async def process_fingerprinting(message: Message, state: FSMContext):
     data = await state.get_data()
     form_data = data.get("form_data", {})
     form_data["documents"]["fingerprinting"] = has_fingerprinting
+    await state.update_data(form_data=form_data)
+    
+    await state.set_state(FormStates.waiting_for_medical_exam_dactyloscopy)
+    await message.answer(
+        "Проходили ли вы медосмотр по дактилоскопии?",
+        reply_markup=get_yes_no_keyboard()
+    )
+
+
+async def process_medical_exam_dactyloscopy(message: Message, state: FSMContext):
+    """Обработка медосмотра по дактилоскопии"""
+    if message.text == "⏪ Назад":
+        await state.set_state(FormStates.waiting_for_fingerprinting)
+        await message.answer("Прошли ли вы дактилоскопию?", reply_markup=get_yes_no_keyboard())
+        return
+    
+    has_exam = "Да" in message.text
+    
+    data = await state.get_data()
+    form_data = data.get("form_data", {})
+    form_data["documents"]["medical_exam_dactyloscopy"] = has_exam
+    await state.update_data(form_data=form_data)
+    
+    await state.set_state(FormStates.waiting_for_mvd_registry_check)
+    await message.answer(
+        "Проверили ли вы себя в Реестре контролируемых лиц МВД? (https://мвд.рф/rkl)",
+        reply_markup=get_yes_no_keyboard()
+    )
+
+
+async def process_mvd_registry_check(message: Message, state: FSMContext):
+    """Обработка проверки в реестре МВД"""
+    if message.text == "⏪ Назад":
+        await state.set_state(FormStates.waiting_for_medical_exam_dactyloscopy)
+        await message.answer("Проходили ли вы медосмотр по дактилоскопии?", reply_markup=get_yes_no_keyboard())
+        return
+    
+    checked = "Да" in message.text
+    
+    data = await state.get_data()
+    form_data = data.get("form_data", {})
+    form_data["documents"]["mvd_registry_check"] = checked
     await state.update_data(form_data=form_data)
     
     await state.set_state(FormStates.waiting_for_medical_book_file)
@@ -830,8 +845,17 @@ async def process_fingerprinting(message: Message, state: FSMContext):
 async def process_medical_book_file(message: Message, state: FSMContext):
     """Обработка файла медицинской книжки"""
     if message.text == "⏭️ Пропустить":
-        await message.answer("Пропущено. Загрузите разрешение на работу (если есть):")
-        await state.set_state(FormStates.waiting_for_work_permit_file)
+        data = await state.get_data()
+        form_data = data.get("form_data", {})
+        user_id = message.from_user.id
+        save_form_data(user_id, form_data, save_to_sheets=False)
+        percentage, progress_bar = calculate_progress(form_data)
+        await message.answer(
+            f"{get_completion_message('Документы')}\n\n"
+            f"📊 Прогресс: {progress_bar} {percentage}%\n"
+            f"{get_motivational_message(percentage)}",
+            reply_markup=get_section_keyboard()
+        )
         return
     
     if not (message.photo or message.document):
@@ -860,308 +884,22 @@ async def process_medical_book_file(message: Message, state: FSMContext):
     form_data["documents"]["files"]["medical_book"] = file_path
     await state.update_data(form_data=form_data)
     
-    await state.set_state(FormStates.waiting_for_work_permit_file)
-    await message.answer("Загрузите разрешение на работу (если есть):", reply_markup=get_skip_keyboard())
-
-
-async def process_work_permit_file(message: Message, state: FSMContext):
-    """Обработка файла разрешения на работу"""
-    if message.text == "⏭️ Пропустить":
-        data = await state.get_data()
-        form_data = data.get("form_data", {})
-        percentage, progress_bar = calculate_progress(form_data)
-        await message.answer(
-            f"{get_completion_message('Документы и разрешения')}\n\n"
-            f"📊 Прогресс: {progress_bar} {percentage}%\n"
-            f"{get_motivational_message(percentage)}",
-            reply_markup=get_section_keyboard()
-        )
-        return
-    
-    if not (message.photo or message.document):
-        await message.answer("❌ Пожалуйста, отправьте файл или фото.")
-        return
-    
-    # Сохраняем файл
     user_id = message.from_user.id
-    user_docs_dir = os.path.join(DOCUMENTS_DIR, str(user_id))
-    os.makedirs(user_docs_dir, exist_ok=True)
-    
-    if message.photo:
-        photo = message.photo[-1]
-        file_path = os.path.join(user_docs_dir, "work_permit.jpg")
-        file = await message.bot.get_file(photo.file_id)
-    else:
-        file_path = os.path.join(user_docs_dir, f"work_permit_{message.document.file_name}")
-        file = await message.bot.get_file(message.document.file_id)
-    
-    await message.bot.download_file(file.file_path, file_path)
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
-    if "files" not in form_data["documents"]:
-        form_data["documents"]["files"] = {}
-    form_data["documents"]["files"]["work_permit"] = file_path
-    await state.update_data(form_data=form_data)
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
+    save_form_data(user_id, form_data, save_to_sheets=False)
     percentage, progress_bar = calculate_progress(form_data)
     await message.answer(
-        f"{get_completion_message('Документы и разрешения')}\n\n"
+        f"✅ Файл сохранен!\n"
+        f"{get_completion_message('Документы')}\n\n"
         f"📊 Прогресс: {progress_bar} {percentage}%\n"
         f"{get_motivational_message(percentage)}",
-            reply_markup=get_section_keyboard()
-        )
-
-
-# ========== РАЗДЕЛ 5: ОБРАЗОВАНИЕ ==========
-
-async def process_education_institution(message: Message, state: FSMContext):
-    """Обработка учебного заведения"""
-    if message.text == "⏭️ Пропустить":
-        await message.answer("Пропущено. Введите период обучения:")
-        await state.set_state(FormStates.waiting_for_education_period)
-        return
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
-    if "education" not in form_data:
-        form_data["education"] = {}
-    form_data["education"]["institution"] = message.text
-    await state.update_data(form_data=form_data)
-    
-    await state.set_state(FormStates.waiting_for_education_period)
-    await message.answer("Введите период обучения (например: 2015-2019):", reply_markup=get_skip_keyboard())
-
-
-async def process_education_period(message: Message, state: FSMContext):
-    """Обработка периода обучения"""
-    if message.text == "⏭️ Пропустить":
-        await message.answer("Пропущено. Введите специальность / квалификацию:")
-        await state.set_state(FormStates.waiting_for_education_specialty)
-        return
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
-    form_data["education"]["period"] = message.text
-    await state.update_data(form_data=form_data)
-    
-    await state.set_state(FormStates.waiting_for_education_specialty)
-    await message.answer("Введите специальность / квалификацию:", reply_markup=get_skip_keyboard())
-
-
-async def process_education_specialty(message: Message, state: FSMContext):
-    """Обработка специальности"""
-    if message.text == "⏭️ Пропустить":
-        await message.answer("Пропущено. Введите серию и номер документа об образовании:")
-        await state.set_state(FormStates.waiting_for_education_document)
-        return
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
-    form_data["education"]["specialty"] = message.text
-    await state.update_data(form_data=form_data)
-    
-    await state.set_state(FormStates.waiting_for_education_document)
-    await message.answer("Введите серию и номер документа об образовании:", reply_markup=get_skip_keyboard())
-
-
-async def process_education_document(message: Message, state: FSMContext):
-    """Обработка документа об образовании"""
-    if message.text == "⏭️ Пропустить":
-        await message.answer("Пропущено. Загрузите диплом / аттестат (отправьте файл):")
-        await state.set_state(FormStates.waiting_for_education_diploma)
-        return
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
-    form_data["education"]["document"] = message.text
-    await state.update_data(form_data=form_data)
-    
-    await state.set_state(FormStates.waiting_for_education_diploma)
-    await message.answer("Загрузите диплом / аттестат (отправьте файл или фото):", reply_markup=get_skip_keyboard())
-
-
-async def process_education_diploma(message: Message, state: FSMContext):
-    """Обработка диплома/аттестата"""
-    if message.text == "⏭️ Пропустить":
-        data = await state.get_data()
-        form_data = data.get("form_data", {})
-        percentage, progress_bar = calculate_progress(form_data)
-        await message.answer(
-            f"{get_completion_message('Образование')}\n\n"
-            f"📊 Прогресс: {progress_bar} {percentage}%\n"
-            f"{get_motivational_message(percentage)}",
-            reply_markup=get_section_keyboard()
-        )
-        return
-    
-    if not (message.photo or message.document):
-        await message.answer("❌ Пожалуйста, отправьте файл или фото.")
-        return
-    
-    # Сохраняем файл
-    user_id = message.from_user.id
-    user_docs_dir = os.path.join(DOCUMENTS_DIR, str(user_id))
-    os.makedirs(user_docs_dir, exist_ok=True)
-    
-    if message.photo:
-        photo = message.photo[-1]
-        file_path = os.path.join(user_docs_dir, "diploma.jpg")
-        file = await message.bot.get_file(photo.file_id)
-    else:
-        file_path = os.path.join(user_docs_dir, f"diploma_{message.document.file_name}")
-        file = await message.bot.get_file(message.document.file_id)
-    
-    await message.bot.download_file(file.file_path, file_path)
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
-    form_data["education"]["diploma_file"] = file_path
-    await state.update_data(form_data=form_data)
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
-    percentage, progress_bar = calculate_progress(form_data)
-    await message.answer(
-        f"{get_completion_message('Образование')}\n\n"
-        f"📊 Прогресс: {progress_bar} {percentage}%\n"
-        f"{get_motivational_message(percentage)}",
-            reply_markup=get_section_keyboard()
-        )
-
-
-# ========== РАЗДЕЛ 6: ОПЫТ РАБОТЫ ==========
-
-async def process_work_period(message: Message, state: FSMContext):
-    """Обработка периода работы"""
-    if message.text == "⏭️ Пропустить":
-        await message.answer("Пропущено. Введите название организации:")
-        await state.set_state(FormStates.waiting_for_work_organization)
-        return
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
-    if "work_experience" not in form_data:
-        form_data["work_experience"] = []
-    
-    # Создаем новый блок опыта работы
-    work_entry = {"period": message.text}
-    form_data["work_experience"].append(work_entry)
-    await state.update_data(form_data=form_data, current_work_index=len(form_data["work_experience"]) - 1)
-    
-    await state.set_state(FormStates.waiting_for_work_organization)
-    await message.answer("Введите название организации:", reply_markup=get_skip_keyboard())
-
-
-async def process_work_organization(message: Message, state: FSMContext):
-    """Обработка организации"""
-    if message.text == "⏭️ Пропустить":
-        await message.answer("Пропущено. Введите должность:")
-        await state.set_state(FormStates.waiting_for_work_position)
-        return
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
-    work_index = data.get("current_work_index", len(form_data["work_experience"]) - 1)
-    form_data["work_experience"][work_index]["organization"] = message.text
-    await state.update_data(form_data=form_data)
-    
-    await state.set_state(FormStates.waiting_for_work_position)
-    await message.answer("Введите должность:", reply_markup=get_skip_keyboard())
-
-
-async def process_work_position(message: Message, state: FSMContext):
-    """Обработка должности"""
-    if message.text == "⏭️ Пропустить":
-        await message.answer("Пропущено. Введите основные обязанности:")
-        await state.set_state(FormStates.waiting_for_work_duties)
-        return
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
-    work_index = data.get("current_work_index", len(form_data["work_experience"]) - 1)
-    form_data["work_experience"][work_index]["position"] = message.text
-    await state.update_data(form_data=form_data)
-    
-    await state.set_state(FormStates.waiting_for_work_duties)
-    await message.answer("Введите основные обязанности (длинный текст):", reply_markup=get_skip_keyboard())
-
-
-async def process_work_duties(message: Message, state: FSMContext):
-    """Обработка обязанностей"""
-    if message.text == "⏭️ Пропустить":
-        await message.answer("Пропущено. Добавить еще один блок опыта работы?")
-        await state.set_state(FormStates.waiting_for_add_more_work)
-        return
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
-    work_index = data.get("current_work_index", len(form_data["work_experience"]) - 1)
-    form_data["work_experience"][work_index]["duties"] = message.text
-    await state.update_data(form_data=form_data)
-    
-    await state.set_state(FormStates.waiting_for_add_more_work)
-    await message.answer(
-        "Добавить еще один блок опыта работы?",
-        reply_markup=get_add_more_keyboard()
+        reply_markup=get_section_keyboard()
     )
 
 
-async def process_add_more_work(message: Message, state: FSMContext):
-    """Обработка добавления еще одного блока опыта"""
-    if message.text == "⏪ Назад":
-        await state.set_state(FormStates.waiting_for_work_duties)
-        await message.answer("Введите основные обязанности:")
-        return
-    
-    if "➕ Добавить еще" in message.text:
-        await state.set_state(FormStates.waiting_for_work_period)
-        await message.answer("Введите период работы (например: 01.2020 - 12.2023):", reply_markup=get_skip_keyboard())
-    else:
-        data = await state.get_data()
-        form_data = data.get("form_data", {})
-        percentage, progress_bar = calculate_progress(form_data)
-        await message.answer(
-            f"{get_completion_message('Опыт работы')}\n\n"
-            f"📊 Прогресс: {progress_bar} {percentage}%\n"
-            f"{get_motivational_message(percentage)}",
-            reply_markup=get_section_keyboard()
-        )
+# ========== РАЗДЕЛ 5: ГОТОВНОСТЬ К РАБОТЕ ==========
 
-
-# ========== РАЗДЕЛ 7: ДОПОЛНИТЕЛЬНО ==========
-
-async def process_driver_license(message: Message, state: FSMContext):
-    """Обработка водительского удостоверения"""
-    if message.text == "⏪ Назад":
-        await state.clear()
-        await message.answer("Выберите раздел:", reply_markup=get_section_keyboard())
-        return
-    
-    has_license = "Да" in message.text
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
-    if "additional" not in form_data:
-        form_data["additional"] = {}
-    form_data["additional"]["driver_license"] = has_license
-    await state.update_data(form_data=form_data)
-    
-    if has_license:
-        await state.set_state(FormStates.waiting_for_driver_categories)
-        await message.answer("Введите категории водительского удостоверения:", reply_markup=get_skip_keyboard())
-    else:
-        await state.set_state(FormStates.waiting_for_business_trips)
-        await message.answer(
-            "Готовы ли вы к командировкам / вахте?",
-            reply_markup=get_yes_no_keyboard()
-        )
-
-
-async def process_driver_categories(message: Message, state: FSMContext):
-    """Обработка категорий водительского удостоверения"""
+async def process_vakhta_start_date(message: Message, state: FSMContext):
+    """Обработка даты начала вахты"""
     if message.text == "⏭️ Пропустить":
         await message.answer("Пропущено. Готовы ли вы к командировкам / вахте?")
         await state.set_state(FormStates.waiting_for_business_trips)
@@ -1169,7 +907,9 @@ async def process_driver_categories(message: Message, state: FSMContext):
     
     data = await state.get_data()
     form_data = data.get("form_data", {})
-    form_data["additional"]["driver_categories"] = message.text
+    if "readiness" not in form_data:
+        form_data["readiness"] = {}
+    form_data["readiness"]["vakhta_start_date"] = message.text
     await state.update_data(form_data=form_data)
     
     await state.set_state(FormStates.waiting_for_business_trips)
@@ -1182,47 +922,55 @@ async def process_driver_categories(message: Message, state: FSMContext):
 async def process_business_trips(message: Message, state: FSMContext):
     """Обработка готовности к командировкам"""
     if message.text == "⏪ Назад":
-        await state.set_state(FormStates.waiting_for_driver_categories)
-        await message.answer("Введите категории водительского удостоверения:")
+        await state.set_state(FormStates.waiting_for_vakhta_start_date)
+        await message.answer("Когда вы готовы начать вахту?")
         return
     
     ready = "Да" in message.text
     
     data = await state.get_data()
     form_data = data.get("form_data", {})
-    form_data["additional"]["business_trips"] = ready
+    if "readiness" not in form_data:
+        form_data["readiness"] = {}
+    form_data["readiness"]["business_trips"] = ready
     await state.update_data(form_data=form_data)
     
-    await state.set_state(FormStates.waiting_for_medical_exam)
-    await message.answer(
-        "Есть ли у вас медосмотр / допуск?",
-        reply_markup=get_yes_no_keyboard()
-    )
+    await state.set_state(FormStates.waiting_for_city)
+    await message.answer("Введите город проживания:", reply_markup=get_skip_keyboard())
 
 
-async def process_medical_exam(message: Message, state: FSMContext):
-    """Обработка медосмотра"""
-    if message.text == "⏪ Назад":
-        await state.set_state(FormStates.waiting_for_business_trips)
-        await message.answer("Готовы ли вы к командировкам / вахте?", reply_markup=get_yes_no_keyboard())
-        return
-    
-    has_exam = "Да" in message.text
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
-    form_data["additional"]["medical_exam"] = has_exam
-    await state.update_data(form_data=form_data)
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
-    percentage, progress_bar = calculate_progress(form_data)
-    await message.answer(
-        f"{get_completion_message('Дополнительно')}\n\n"
-        f"📊 Прогресс: {progress_bar} {percentage}%\n"
-        f"{get_motivational_message(percentage)}",
+async def process_city(message: Message, state: FSMContext):
+    """Обработка города проживания"""
+    if message.text == "⏭️ Пропустить":
+        data = await state.get_data()
+        form_data = data.get("form_data", {})
+        user_id = message.from_user.id
+        save_form_data(user_id, form_data, save_to_sheets=False)
+        percentage, progress_bar = calculate_progress(form_data)
+        await message.answer(
+            f"{get_completion_message('Готовность к работе')}\n\n"
+            f"📊 Прогресс: {progress_bar} {percentage}%\n"
+            f"{get_motivational_message(percentage)}",
             reply_markup=get_section_keyboard()
         )
+        return
+    
+    data = await state.get_data()
+    form_data = data.get("form_data", {})
+    if "readiness" not in form_data:
+        form_data["readiness"] = {}
+    form_data["readiness"]["city"] = message.text
+    await state.update_data(form_data=form_data)
+    
+    user_id = message.from_user.id
+    save_form_data(user_id, form_data, save_to_sheets=False)
+    percentage, progress_bar = calculate_progress(form_data)
+    await message.answer(
+        f"{get_completion_message('Готовность к работе')}\n\n"
+        f"📊 Прогресс: {progress_bar} {percentage}%\n"
+        f"{get_motivational_message(percentage)}",
+        reply_markup=get_section_keyboard()
+    )
 
 
 # ========== РАЗДЕЛ 8: СОГЛАСИЯ ==========
@@ -1249,7 +997,7 @@ async def process_personal_data_consent(message: Message, state: FSMContext):
     
     await state.set_state(FormStates.waiting_for_rotation_consent)
     await message.answer(
-        "Даете ли вы разрешение на выезд и проживание на вахте?",
+        "Готовы ли вы к выезду и проживанию на вахте?",
         reply_markup=get_yes_no_keyboard()
     )
 
@@ -1323,6 +1071,8 @@ async def process_chronic_diseases_confirmation(message: Message, state: FSMCont
     
     data = await state.get_data()
     form_data = data.get("form_data", {})
+    if "confirmations" not in form_data:
+        form_data["confirmations"] = {}
     form_data["confirmations"]["chronic_diseases"] = True
     await state.update_data(form_data=form_data)
     
@@ -1342,9 +1092,15 @@ async def process_russia_stay_confirmation(message: Message, state: FSMContext):
     
     confirmed = "Да" in message.text
     
+    if not confirmed:
+        await message.answer("❌ Для продолжения необходимо подтвердить, что вы не находились в России более 2 месяцев без оформления документов.")
+        return
+    
     data = await state.get_data()
     form_data = data.get("form_data", {})
-    form_data["confirmations"]["russia_stay"] = confirmed
+    if "confirmations" not in form_data:
+        form_data["confirmations"] = {}
+    form_data["confirmations"]["russia_stay"] = False  # НЕТ - не находились более 2 месяцев
     await state.update_data(form_data=form_data)
     
     await state.set_state(FormStates.waiting_for_90_days_warning_confirmation)
@@ -1365,6 +1121,8 @@ async def process_90_days_warning_confirmation(message: Message, state: FSMConte
     
     data = await state.get_data()
     form_data = data.get("form_data", {})
+    if "confirmations" not in form_data:
+        form_data["confirmations"] = {}
     form_data["confirmations"]["90_days_warning"] = confirmed
     await state.update_data(form_data=form_data)
     
@@ -1386,6 +1144,8 @@ async def process_documents_readiness(message: Message, state: FSMContext):
     
     data = await state.get_data()
     form_data = data.get("form_data", {})
+    if "confirmations" not in form_data:
+        form_data["confirmations"] = {}
     form_data["confirmations"]["documents_readiness"] = ready
     await state.update_data(form_data=form_data)
     
@@ -1407,6 +1167,8 @@ async def process_self_employment_consent(message: Message, state: FSMContext):
     
     data = await state.get_data()
     form_data = data.get("form_data", {})
+    if "confirmations" not in form_data:
+        form_data["confirmations"] = {}
     form_data["confirmations"]["self_employment"] = consented
     await state.update_data(form_data=form_data)
     
@@ -1428,48 +1190,54 @@ async def process_compensation_consent(message: Message, state: FSMContext):
     
     data = await state.get_data()
     form_data = data.get("form_data", {})
+    if "confirmations" not in form_data:
+        form_data["confirmations"] = {}
     form_data["confirmations"]["compensation"] = consented
     await state.update_data(form_data=form_data)
     
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
+    user_id = message.from_user.id
+    save_form_data(user_id, form_data, save_to_sheets=False)
+    
     percentage, progress_bar = calculate_progress(form_data)
     await message.answer(
         f"{get_completion_message('Подтверждения')}\n\n"
         f"📊 Прогресс: {progress_bar} {percentage}%\n"
         f"{get_motivational_message(percentage)}",
-            reply_markup=get_section_keyboard()
-        )
+        reply_markup=get_section_keyboard()
+    )
 
 
 # ========== РАЗДЕЛ 10: КОММЕНТАРИИ ==========
 
 async def process_comments(message: Message, state: FSMContext):
     """Обработка комментариев"""
+    data = await state.get_data()
+    form_data = data.get("form_data", {})
+    citizenship_type = form_data.get("citizenship_type", "")
+    
     if message.text == "⏭️ Пропустить":
-        data = await state.get_data()
-        form_data = data.get("form_data", {})
+        form_data["comments"] = ""
+    else:
+        form_data["comments"] = message.text
+    await state.update_data(form_data=form_data)
+    
+    user_id = message.from_user.id
+    save_form_data(user_id, form_data, save_to_sheets=False)
+    
+    # Если иностранец, переходим к подтверждениям
+    if citizenship_type == "Иностранец":
+        await state.set_state(FormStates.waiting_for_tuberculosis_confirmation)
+        await message.answer(
+            "Требуется подтверждение важных сведений. Подтверждаете ли вы, что у вас нет таких заболеваний как туберкулез, сифилис, ВИЧ?",
+            reply_markup=get_yes_no_keyboard()
+        )
+    else:
+        # Для граждан РФ завершаем
         percentage, progress_bar = calculate_progress(form_data)
         await message.answer(
             f"{get_completion_message('Комментарии')}\n\n"
             f"📊 Прогресс: {progress_bar} {percentage}%\n"
             f"{get_motivational_message(percentage)}",
-            reply_markup=get_section_keyboard()
-        )
-        return
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
-    form_data["comments"] = message.text
-    await state.update_data(form_data=form_data)
-    
-    data = await state.get_data()
-    form_data = data.get("form_data", {})
-    percentage, progress_bar = calculate_progress(form_data)
-    await message.answer(
-        f"{get_completion_message('Комментарии')}\n\n"
-        f"📊 Прогресс: {progress_bar} {percentage}%\n"
-        f"{get_motivational_message(percentage)}",
             reply_markup=get_section_keyboard()
         )
 
@@ -1507,10 +1275,7 @@ async def process_final_confirmation(message: Message, state: FSMContext):
         
         percentage, progress_bar = calculate_progress(form_data)
         await message.answer(
-            "🎉 Поздравляем! Анкета успешно отправлена!\n\n"
-            f"📊 Финальный прогресс: {progress_bar} {percentage}%\n"
-            "✨ Спасибо за заполнение. Ваши данные сохранены в базу данных и отправлены в таблицу.\n"
-            "🏆 Вы успешно завершили все разделы анкеты!",
+            "✅ Анкета заполнена. Мы свяжемся с вами.",
             reply_markup=get_main_keyboard()
         )
         await state.clear()
@@ -1531,12 +1296,9 @@ def register_form_handlers(dp: Dispatcher):
     dp.callback_query.register(section_2_passport, F.data == "section_2")
     dp.callback_query.register(section_3_contacts, F.data == "section_3")
     dp.callback_query.register(section_4_documents, F.data == "section_4")
-    dp.callback_query.register(section_5_education, F.data == "section_5")
-    dp.callback_query.register(section_6_work_experience, F.data == "section_6")
-    dp.callback_query.register(section_7_additional, F.data == "section_7")
-    dp.callback_query.register(section_8_consents, F.data == "section_8")
-    dp.callback_query.register(section_9_confirmations, F.data == "section_9")
-    dp.callback_query.register(section_10_comments, F.data == "section_10")
+    dp.callback_query.register(section_5_readiness, F.data == "section_5")
+    dp.callback_query.register(section_6_consents, F.data == "section_6")
+    dp.callback_query.register(section_7_comments, F.data == "section_7")
     dp.callback_query.register(finish_form_handler, F.data == "finish_form")
     
     # Раздел 1: Личные данные
@@ -1547,7 +1309,9 @@ def register_form_handlers(dp: Dispatcher):
     dp.message.register(process_birth_place, FormStates.waiting_for_birth_place)
     dp.message.register(process_citizenship, FormStates.waiting_for_citizenship)
     dp.message.register(process_gender, FormStates.waiting_for_gender)
-    dp.message.register(process_photo_3x4, FormStates.waiting_for_photo_3x4)
+    
+    # Выбор гражданства
+    dp.message.register(process_citizenship_choice, FormStates.waiting_for_citizenship_choice)
     
     # Раздел 2: Паспортные данные
     dp.message.register(process_passport_series_number, FormStates.waiting_for_passport_series_number)
@@ -1561,44 +1325,31 @@ def register_form_handlers(dp: Dispatcher):
     
     # Раздел 3: Контактная информация
     dp.message.register(process_phone, FormStates.waiting_for_phone)
-    dp.message.register(process_email, FormStates.waiting_for_email)
-    dp.message.register(process_social_media, FormStates.waiting_for_social_media)
     
-    # Раздел 4: Документы и разрешения
+    # Раздел 4: Документы
     dp.message.register(process_medical_book, FormStates.waiting_for_medical_book)
-    dp.message.register(process_work_permit, FormStates.waiting_for_work_permit)
     dp.message.register(process_registration, FormStates.waiting_for_registration)
     dp.message.register(process_snils, FormStates.waiting_for_snils)
     dp.message.register(process_inn, FormStates.waiting_for_inn)
+    dp.message.register(process_foreigner_id, FormStates.waiting_for_foreigner_id)
     dp.message.register(process_fingerprinting, FormStates.waiting_for_fingerprinting)
+    dp.message.register(process_medical_exam_dactyloscopy, FormStates.waiting_for_medical_exam_dactyloscopy)
+    dp.message.register(process_mvd_registry_check, FormStates.waiting_for_mvd_registry_check)
     dp.message.register(process_medical_book_file, FormStates.waiting_for_medical_book_file)
-    dp.message.register(process_work_permit_file, FormStates.waiting_for_work_permit_file)
     
-    # Раздел 5: Образование
-    dp.message.register(process_education_institution, FormStates.waiting_for_education_institution)
-    dp.message.register(process_education_period, FormStates.waiting_for_education_period)
-    dp.message.register(process_education_specialty, FormStates.waiting_for_education_specialty)
-    dp.message.register(process_education_document, FormStates.waiting_for_education_document)
-    dp.message.register(process_education_diploma, FormStates.waiting_for_education_diploma)
-    
-    # Раздел 6: Опыт работы
-    dp.message.register(process_work_period, FormStates.waiting_for_work_period)
-    dp.message.register(process_work_organization, FormStates.waiting_for_work_organization)
-    dp.message.register(process_work_position, FormStates.waiting_for_work_position)
-    dp.message.register(process_work_duties, FormStates.waiting_for_work_duties)
-    dp.message.register(process_add_more_work, FormStates.waiting_for_add_more_work)
-    
-    # Раздел 7: Дополнительно
-    dp.message.register(process_driver_license, FormStates.waiting_for_driver_license)
-    dp.message.register(process_driver_categories, FormStates.waiting_for_driver_categories)
+    # Раздел 5: Готовность к работе
+    dp.message.register(process_vakhta_start_date, FormStates.waiting_for_vakhta_start_date)
     dp.message.register(process_business_trips, FormStates.waiting_for_business_trips)
-    dp.message.register(process_medical_exam, FormStates.waiting_for_medical_exam)
+    dp.message.register(process_city, FormStates.waiting_for_city)
     
-    # Раздел 8: Согласия
+    # Раздел 6: Согласия
     dp.message.register(process_personal_data_consent, FormStates.waiting_for_personal_data_consent)
     dp.message.register(process_rotation_consent, FormStates.waiting_for_rotation_consent)
     
-    # Раздел 9: Подтверждения
+    # Раздел 7: Комментарии
+    dp.message.register(process_comments, FormStates.waiting_for_comments)
+    
+    # Подтверждения (только для иностранцев)
     dp.message.register(process_tuberculosis_confirmation, FormStates.waiting_for_tuberculosis_confirmation)
     dp.message.register(process_chronic_diseases_confirmation, FormStates.waiting_for_chronic_diseases_confirmation)
     dp.message.register(process_russia_stay_confirmation, FormStates.waiting_for_russia_stay_confirmation)
@@ -1606,9 +1357,6 @@ def register_form_handlers(dp: Dispatcher):
     dp.message.register(process_documents_readiness, FormStates.waiting_for_documents_readiness)
     dp.message.register(process_self_employment_consent, FormStates.waiting_for_self_employment_consent)
     dp.message.register(process_compensation_consent, FormStates.waiting_for_compensation_consent)
-    
-    # Раздел 10: Комментарии
-    dp.message.register(process_comments, FormStates.waiting_for_comments)
     
     # Финальное подтверждение
     dp.message.register(process_final_confirmation, FormStates.waiting_for_final_confirmation)

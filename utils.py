@@ -42,6 +42,8 @@ def format_form_preview(data: dict) -> str:
     """Форматирует данные анкеты для предпросмотра"""
     text = "📋 Предпросмотр анкеты:\n\n"
     
+    citizenship_type = data.get("citizenship_type", "")
+    
     # 1. Личные данные
     if data.get("personal_data"):
         pd = data["personal_data"]
@@ -53,7 +55,9 @@ def format_form_preview(data: dict) -> str:
         text += f"Место рождения: {pd.get('birth_place', 'Не указано')}\n"
         text += f"Гражданство: {pd.get('citizenship', 'Не указано')}\n"
         text += f"Пол: {pd.get('gender', 'Не указано')}\n"
-        text += f"Фото 3×4: {'✅ Загружено' if pd.get('photo_3x4') else '❌ Не загружено'}\n\n"
+        if citizenship_type:
+            text += f"Ветка: {citizenship_type}\n"
+        text += "\n"
     
     # 2. Паспортные данные
     if data.get("passport_data"):
@@ -72,75 +76,54 @@ def format_form_preview(data: dict) -> str:
     if data.get("contacts"):
         contacts = data["contacts"]
         text += "3️⃣ Контактная информация:\n"
-        text += f"Телефон: {contacts.get('phone', 'Не указано')}\n"
-        text += f"Email: {contacts.get('email', 'Не указано')}\n"
-        text += f"Соцсети: {contacts.get('social_media', 'Не указано')}\n\n"
+        text += f"Телефон: {contacts.get('phone', 'Не указано')}\n\n"
     
-    # 4. Документы и разрешения
+    # 4. Документы
     if data.get("documents"):
         docs = data["documents"]
-        text += "4️⃣ Документы и разрешения:\n"
+        text += "4️⃣ Документы:\n"
         text += f"Медкнижка: {'✅ Есть' if docs.get('medical_book') else '❌ Нет'}\n"
-        text += f"Разрешение на работу: {'✅ Есть' if docs.get('work_permit') else '❌ Нет'}\n"
         text += f"Регистрация: {'✅ Да' if docs.get('registration') else '❌ Нет'}\n"
         text += f"СНИЛС: {docs.get('snils', 'Не указано')}\n"
         text += f"ИНН: {docs.get('inn', 'Не указано')}\n"
-        text += f"Дактилоскопия: {'✅ Да' if docs.get('fingerprinting') else '❌ Нет'}\n\n"
-    
-    # 5. Образование
-    if data.get("education"):
-        edu = data["education"]
-        text += "5️⃣ Образование:\n"
-        text += f"Учебное заведение: {edu.get('institution', 'Не указано')}\n"
-        text += f"Период обучения: {edu.get('period', 'Не указано')}\n"
-        text += f"Специальность: {edu.get('specialty', 'Не указано')}\n"
-        text += f"Документ: {edu.get('document', 'Не указано')}\n"
-        text += f"Диплом: {'✅ Загружен' if edu.get('diploma_file') else '❌ Не загружен'}\n\n"
-    
-    # 6. Опыт работы
-    if data.get("work_experience"):
-        text += "6️⃣ Опыт работы:\n"
-        for i, work in enumerate(data["work_experience"], 1):
-            text += f"  Место {i}:\n"
-            text += f"  Период: {work.get('period', 'Не указано')}\n"
-            text += f"  Организация: {work.get('organization', 'Не указано')}\n"
-            text += f"  Должность: {work.get('position', 'Не указано')}\n"
-            text += f"  Обязанности: {work.get('duties', 'Не указано')[:50]}...\n"
+        if citizenship_type == "Иностранец":
+            text += f"ID: {docs.get('foreigner_id', 'Не указано')}\n"
+            text += f"Дактилоскопия: {'✅ Да' if docs.get('fingerprinting') else '❌ Нет'}\n"
+            text += f"Медосмотр по дактилоскопии: {'✅ Да' if docs.get('medical_exam_dactyloscopy') else '❌ Нет'}\n"
+            text += f"Проверка в реестре МВД: {'✅ Да' if docs.get('mvd_registry_check') else '❌ Нет'}\n"
         text += "\n"
     
-    # 7. Дополнительно
-    if data.get("additional"):
-        add = data["additional"]
-        text += "7️⃣ Дополнительно:\n"
-        text += f"Водительское удостоверение: {'✅ Да' if add.get('driver_license') else '❌ Нет'}\n"
-        if add.get('driver_categories'):
-            text += f"Категории: {add.get('driver_categories')}\n"
-        text += f"Готовность к командировкам: {'✅ Да' if add.get('business_trips') else '❌ Нет'}\n"
-        text += f"Медосмотр: {'✅ Да' if add.get('medical_exam') else '❌ Нет'}\n\n"
+    # 5. Готовность к работе
+    if data.get("readiness"):
+        readiness = data["readiness"]
+        text += "5️⃣ Готовность к работе:\n"
+        text += f"Когда готов начать вахту: {readiness.get('vakhta_start_date', 'Не указано')}\n"
+        text += f"Готовность к командировкам: {'✅ Да' if readiness.get('business_trips') else '❌ Нет'}\n"
+        text += f"Город проживания: {readiness.get('city', 'Не указано')}\n\n"
     
-    # 8. Согласия
+    # 6. Согласия
     if data.get("consents"):
         cons = data["consents"]
-        text += "8️⃣ Согласия:\n"
+        text += "6️⃣ Согласия:\n"
         text += f"Обработка ПД: {'✅ Да' if cons.get('personal_data') else '❌ Нет'}\n"
-        text += f"Разрешение на вахту: {'✅ Да' if cons.get('rotation') else '❌ Нет'}\n\n"
+        text += f"Готовность к вахте: {'✅ Да' if cons.get('rotation') else '❌ Нет'}\n\n"
     
-    # 9. Подтверждения
-    if data.get("confirmations"):
+    # 7. Комментарии
+    if data.get("comments"):
+        text += "7️⃣ Комментарии:\n"
+        text += f"{data.get('comments')[:200]}\n\n"
+    
+    # Подтверждения (только для иностранцев)
+    if citizenship_type == "Иностранец" and data.get("confirmations"):
         conf = data["confirmations"]
-        text += "9️⃣ Подтверждения:\n"
+        text += "8️⃣ Подтверждения (для иностранных граждан):\n"
         text += f"Нет заболеваний: {'✅ Да' if conf.get('tuberculosis') else '❌ Нет'}\n"
         text += f"Нет хронических заболеваний: {'✅ Да' if conf.get('chronic_diseases') else '❌ Нет'}\n"
-        text += f"Пребывание в РФ: {'✅ Да' if conf.get('russia_stay') else '❌ Нет'}\n"
+        text += f"Пребывание в РФ < 2 месяцев: {'✅ Да' if not conf.get('russia_stay') else '❌ Нет'}\n"
         text += f"Предупреждение о 90 днях: {'✅ Да' if conf.get('90_days_warning') else '❌ Нет'}\n"
         text += f"Готовность оформить документы: {'✅ Да' if conf.get('documents_readiness') else '❌ Нет'}\n"
         text += f"Самозанятость: {'✅ Да' if conf.get('self_employment') else '❌ Нет'}\n"
         text += f"Компенсация затрат: {'✅ Да' if conf.get('compensation') else '❌ Нет'}\n\n"
-    
-    # 10. Комментарии
-    if data.get("comments"):
-        text += "💬 Комментарии:\n"
-        text += f"{data.get('comments')[:200]}...\n\n"
     
     text += "\nИспользуйте кнопки ниже для редактирования или подтверждения."
     

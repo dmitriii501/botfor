@@ -71,23 +71,37 @@ def save_form_to_sheets(spreadsheet_id: str, form_data: dict, user_id: int):
         
         # Получаем первый лист (или лист "Анкеты" если есть)
         try:
-            worksheet = spreadsheet.sheet1  # Используем первый лист по умолчанию
-        except:
+            worksheet = spreadsheet.worksheet("Анкеты")
+        except gspread.exceptions.WorksheetNotFound:
             try:
-                worksheet = spreadsheet.worksheet("Анкеты")
-            except gspread.exceptions.WorksheetNotFound:
+                worksheet = spreadsheet.sheet1  # Используем первый лист по умолчанию
+                # Переименовываем первый лист
+                worksheet.update_title("Анкеты")
+            except:
                 worksheet = spreadsheet.add_worksheet(title="Анкеты", rows=1000, cols=100)
+        
+        # Проверяем, есть ли заголовки. Если нет - добавляем
+        try:
+            headers = worksheet.row_values(1)
+            if not headers or len(headers) == 0:
+                # Добавляем заголовки
+                headers_list = get_headers()
+                worksheet.insert_row(headers_list, 1)
+        except:
+            # Если не удалось прочитать заголовки, добавляем их
+            headers_list = get_headers()
+            worksheet.insert_row(headers_list, 1)
         
         # Подготавливаем данные для записи
         row_data = format_form_data_to_row(form_data, user_id)
         
-        # Проверяем количество колонок
-        if len(row_data) < 58:
+        # Проверяем количество колонок (14 полей согласно ТЗ)
+        if len(row_data) < 14:
             # Дополняем пустыми значениями до нужного количества
-            row_data.extend([""] * (58 - len(row_data)))
-        elif len(row_data) > 58:
+            row_data.extend([""] * (14 - len(row_data)))
+        elif len(row_data) > 14:
             # Обрезаем до нужного количества
-            row_data = row_data[:58]
+            row_data = row_data[:14]
         
         # Добавляем строку в таблицу
         worksheet.append_row(row_data)
@@ -109,200 +123,95 @@ def save_form_to_sheets(spreadsheet_id: str, form_data: dict, user_id: int):
 
 
 def get_headers():
-    """Возвращает список заголовков для таблицы (соответствует структуре таблицы)"""
+    """Возвращает список заголовков для таблицы (минимальные поля согласно ТЗ)"""
     return [
         "ID",
-        "Дата након",
-        "Товарищ ГЦ",
-        "Фамилия",
-        "Имя",
-        "Отчество",
-        "Дата рожд",
-        "Место рож:",
-        "Товарищ",
-        "Пол",
-        "Фото 3х4",
-        "Серия и но",
-        "Кем выдан",
-        "Дата выдачи",
-        "Код по адрес:",
-        "Адрес реги",
-        "Факт адрес",
-        "Дополнит",
-        "Фото лист",
-        "Ме в связи",
-        "Электронн",
-        "Соцсети /",
-        "Медцентр",
-        "Разрешени Ре",
-        "ы награды",
-        "СИРОТС",
-        "МИК",
-        "Диагнозы",
-        "Образовани",
-        "Период об",
-        "Специальн",
-        "Документ с",
-        "Должн:",
-        "Отм: 1 —",
-        "— и",
-        "Отм: 1 —",
-        "— и",
-        "Отм: 1 —",
-        "— и",
-        "Отм: 2 —",
-        "— и",
-        "Отм: 2 —",
-        "— и",
-        "Отм: 2 —",
-        "— и",
-        "Федулиных",
-        "Категории",
-        "Пома видов:",
-        "Медосмотр:",
-        "Списки и",
-        "Согласие и",
-        "Подтвержд",
-        "Подтвержд",
-        "Подтвержд",
-        "Предупрежд",
-        "Готов сброс",
-        "Согласие н. и.",
-        "олинская",
-        "Помощник арии / вопросы"
+        "Дата заполнения",
+        "ФИО",
+        "Телефон",
+        "Гражданство",
+        "Ветка",
+        "Город",
+        "Когда готов начать",
+        "Паспорт",
+        "ID (иностранец)",
+        "Проверка в реестре МВД",
+        "Медосмотр/дактилоскопия",
+        "Согласия",
+        "Комментарии"
     ]
 
 
 def format_form_data_to_row(form_data: dict, user_id: int) -> list:
-    """Форматирует данные анкеты в строку для таблицы (соответствует структуре таблицы)"""
+    """Форматирует данные анкеты в строку для таблицы (минимальные поля согласно ТЗ)"""
     row = []
     
     # ID
     row.append(str(user_id))
     
-    # Дата након (дата заполнения)
+    # Дата заполнения
     filled_at = form_data.get("filled_at", datetime.now().strftime("%d.%m.%Y"))
+    if isinstance(filled_at, str) and "T" in filled_at:
+        # Если ISO формат, конвертируем
+        try:
+            from datetime import datetime as dt
+            dt_obj = dt.fromisoformat(filled_at.replace("Z", "+00:00"))
+            filled_at = dt_obj.strftime("%d.%m.%Y")
+        except:
+            pass
     row.append(filled_at)
     
-    # Товарищ ГЦ (пусто)
-    row.append("")
-    
-    # Личные данные
+    # ФИО
     pd = form_data.get("personal_data", {})
-    row.extend([
-        pd.get("surname", ""),
-        pd.get("name", ""),
-        pd.get("patronymic", ""),
-        pd.get("birth_date", ""),
-        pd.get("birth_place", ""),
-        "",  # Товарищ (пусто)
-        pd.get("gender", ""),
-        "Да" if pd.get("photo_3x4") else "Нет"
-    ])
+    fio = f"{pd.get('surname', '')} {pd.get('name', '')} {pd.get('patronymic', '')}".strip()
+    row.append(fio)
     
-    # Паспортные данные
-    pass_data = form_data.get("passport_data", {})
-    row.extend([
-        pass_data.get("series_number", ""),
-        pass_data.get("issued_by", ""),
-        pass_data.get("issue_date", ""),
-        pass_data.get("division_code", ""),
-        pass_data.get("registration_address", ""),
-        pass_data.get("actual_address", ""),
-        pass_data.get("additional", ""),
-        "Да" if pass_data.get("photo") else "Нет"
-    ])
-    
-    # Контактная информация
+    # Телефон
     contacts = form_data.get("contacts", {})
-    row.extend([
-        contacts.get("phone", ""),
-        contacts.get("email", ""),
-        contacts.get("social_media", "")
-    ])
+    row.append(contacts.get("phone", ""))
     
-    # Документы и разрешения
+    # Гражданство
+    citizenship = pd.get("citizenship", "")
+    row.append(citizenship)
+    
+    # Ветка (Россия или Иностранец)
+    citizenship_type = form_data.get("citizenship_type", "")
+    row.append(citizenship_type)
+    
+    # Город
+    readiness = form_data.get("readiness", {})
+    row.append(readiness.get("city", ""))
+    
+    # Когда готов начать
+    row.append(readiness.get("vakhta_start_date", ""))
+    
+    # Паспорт
+    pass_data = form_data.get("passport_data", {})
+    passport = pass_data.get("series_number", "")
+    row.append(passport)
+    
+    # ID (иностранец)
     docs = form_data.get("documents", {})
-    files = docs.get("files", {})
-    row.extend([
-        "Да" if docs.get("medical_book") else "Нет",  # Медцентр
-        "Да" if docs.get("work_permit") else "Нет",  # Разрешени Ре
-        "Да" if docs.get("registration") else "Нет",  # ы награды (регистрация)
-        docs.get("snils", ""),  # СИРОТС
-        docs.get("inn", ""),  # МИК
-        "Да" if docs.get("fingerprinting") else "Нет"  # Диагнозы (дактилоскопия)
-    ])
+    foreigner_id = docs.get("foreigner_id", "") if citizenship_type == "Иностранец" else ""
+    row.append(foreigner_id)
     
-    # Образование
-    edu = form_data.get("education", {})
-    row.extend([
-        edu.get("institution", ""),
-        edu.get("period", ""),
-        edu.get("specialty", ""),
-        edu.get("document", "")
-    ])
+    # Проверка в реестре МВД
+    mvd_check = "Да" if docs.get("mvd_registry_check") else "Нет" if citizenship_type == "Иностранец" else ""
+    row.append(mvd_check)
     
-    # Опыт работы - первое место (Должн:)
-    work_exp = form_data.get("work_experience", [])
-    if len(work_exp) > 0:
-        work1 = work_exp[0]
-        row.append(work1.get("position", ""))  # Должн: (32)
-        # Отм: 1 — и (повторяется 4 раза для первого опыта)
-        row.extend([
-            work1.get("period", ""),  # Отм: 1 — (33)
-            "",  # — и (34)
-            work1.get("organization", ""),  # Отм: 1 — (35)
-            "",  # — и (36)
-            work1.get("duties", "")[:200] if work1.get("duties") else "",  # Отм: 1 — (37)
-            ""  # — и (38)
-        ])
-    else:
-        row.extend(["", "", "", "", "", "", ""])
-    
-    # Опыт работы - второе место (Отм: 2 — и, повторяется 4 раза)
-    if len(work_exp) > 1:
-        work2 = work_exp[1]
-        row.extend([
-            work2.get("period", ""),  # Отм: 2 — (39)
-            "",  # — и (40)
-            work2.get("organization", ""),  # Отм: 2 — (41)
-            "",  # — и (42)
-            work2.get("duties", "")[:200] if work2.get("duties") else "",  # Отм: 2 — (43)
-            ""  # — и (44)
-        ])
-    else:
-        row.extend(["", "", "", "", "", ""])
-    
-    # Дополнительно
-    add = form_data.get("additional", {})
-    row.extend([
-        add.get("driver_categories", ""),  # Федулиных (категории ВУ)
-        add.get("driver_categories", ""),  # Категории
-        "Да" if add.get("business_trips") else "Нет",  # Пома видов: (готовность к командировкам)
-        "Да" if add.get("medical_exam") else "Нет"  # Медосмотр:
-    ])
+    # Медосмотр/дактилоскопия
+    fingerprinting = "Да" if docs.get("fingerprinting") else "Нет" if citizenship_type == "Иностранец" else ""
+    medical_exam = "Да" if docs.get("medical_exam_dactyloscopy") else "Нет" if citizenship_type == "Иностранец" else ""
+    med_info = f"Дактилоскопия: {fingerprinting}, Медосмотр: {medical_exam}" if citizenship_type == "Иностранец" else ""
+    row.append(med_info)
     
     # Согласия
     cons = form_data.get("consents", {})
-    row.extend([
-        "Да" if cons.get("personal_data") else "Нет",  # Списки и
-        "Да" if cons.get("rotation") else "Нет"  # Согласие и
-    ])
-    
-    # Подтверждения
-    conf = form_data.get("confirmations", {})
-    row.extend([
-        "Да" if conf.get("tuberculosis") else "Нет",  # Подтвержд 1
-        "Да" if conf.get("chronic_diseases") else "Нет",  # Подтвержд 2
-        "Да" if conf.get("russia_stay") else "Нет",  # Подтвержд 3
-        "Да" if conf.get("90_days_warning") else "Нет",  # Предупрежд
-        "Да" if conf.get("documents_readiness") else "Нет",  # Готов сброс
-        "Да" if conf.get("self_employment") else "Нет",  # Согласие н. и. (самозанятость)
-        "Да" if conf.get("compensation") else "Нет"  # олинская (компенсация)
-    ])
+    consents_str = f"ПД: {'Да' if cons.get('personal_data') else 'Нет'}, Вахта: {'Да' if cons.get('rotation') else 'Нет'}"
+    row.append(consents_str)
     
     # Комментарии
-    row.append(form_data.get("comments", ""))  # Помощник арии / вопросы
+    row.append(form_data.get("comments", ""))
     
     return row
 

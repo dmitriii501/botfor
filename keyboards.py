@@ -17,16 +17,21 @@ def get_section_keyboard():
     builder.add(InlineKeyboardButton(text="1️⃣ Личные данные", callback_data="section_1"))
     builder.add(InlineKeyboardButton(text="2️⃣ Паспортные данные", callback_data="section_2"))
     builder.add(InlineKeyboardButton(text="3️⃣ Контактная информация", callback_data="section_3"))
-    builder.add(InlineKeyboardButton(text="4️⃣ Документы и разрешения", callback_data="section_4"))
-    builder.add(InlineKeyboardButton(text="5️⃣ Образование", callback_data="section_5"))
-    builder.add(InlineKeyboardButton(text="6️⃣ Опыт работы", callback_data="section_6"))
-    builder.add(InlineKeyboardButton(text="7️⃣ Дополнительно", callback_data="section_7"))
-    builder.add(InlineKeyboardButton(text="8️⃣ Согласия", callback_data="section_8"))
-    builder.add(InlineKeyboardButton(text="9️⃣ Подтверждения", callback_data="section_9"))
-    builder.add(InlineKeyboardButton(text="💬 Комментарии", callback_data="section_10"))
+    builder.add(InlineKeyboardButton(text="4️⃣ Документы", callback_data="section_4"))
+    builder.add(InlineKeyboardButton(text="5️⃣ Готовность к работе", callback_data="section_5"))
+    builder.add(InlineKeyboardButton(text="6️⃣ Согласия", callback_data="section_6"))
+    builder.add(InlineKeyboardButton(text="7️⃣ Комментарии", callback_data="section_7"))
     builder.add(InlineKeyboardButton(text="✅ Завершить анкету", callback_data="finish_form"))
     builder.adjust(1)
     return builder.as_markup()
+
+
+def get_citizenship_keyboard():
+    """Клавиатура выбора гражданства"""
+    builder = ReplyKeyboardBuilder()
+    builder.add(KeyboardButton(text="🇷🇺 Гражданин России"))
+    builder.add(KeyboardButton(text="🌍 Иностранный гражданин"))
+    return builder.as_markup(resize_keyboard=True)
 
 
 def get_yes_no_keyboard():
