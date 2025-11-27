@@ -9,7 +9,11 @@ from database import init_database
 # Настройка логирования
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # Вывод в консоль
+        logging.FileHandler('bot.log', encoding='utf-8')  # Вывод в файл
+    ]
 )
 logger = logging.getLogger(__name__)
 

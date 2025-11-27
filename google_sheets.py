@@ -3,7 +3,11 @@ import gspread
 import gspread.exceptions
 from google.oauth2.service_account import Credentials
 import os
+import logging
 from datetime import datetime
+
+# Настройка логирования
+logger = logging.getLogger(__name__)
 
 
 # Области доступа для Google Sheets API
@@ -44,18 +48,34 @@ def get_service_account_email():
 def save_form_to_sheets(spreadsheet_id: str, form_data: dict, user_id: int):
     """Сохраняет данные анкеты в Google Sheets таблицу"""
     try:
+        logger.info(f"Попытка сохранить анкету пользователя {user_id} в Google Sheets")
+        
         if not spreadsheet_id:
-            print("Ошибка: GOOGLE_SHEETS_ID не указан в .env файле")
+            error_msg = "Ошибка: GOOGLE_SHEETS_ID не указан в .env файле"
+            logger.error(error_msg)
+            print(error_msg)
             return False
         
-        client = get_sheets_client()
+        logger.info(f"Используется spreadsheet_id: {spreadsheet_id[:20]}...")
+        
+        try:
+            client = get_sheets_client()
+            logger.info("Клиент Google Sheets успешно создан")
+        except Exception as e:
+            error_msg = f"Ошибка при создании клиента Google Sheets: {e}"
+            logger.error(error_msg, exc_info=True)
+            print(error_msg)
+            return False
         
         # Пробуем открыть таблицу по ID
         try:
             spreadsheet = client.open_by_key(spreadsheet_id)
+            logger.info(f"Таблица успешно открыта: {spreadsheet.title}")
         except gspread.exceptions.SpreadsheetNotFound:
             service_email = get_service_account_email()
-            print(f"Ошибка: Таблица с ID '{spreadsheet_id}' не найдена.")
+            error_msg = f"Ошибка: Таблица с ID '{spreadsheet_id}' не найдена."
+            logger.error(error_msg)
+            print(error_msg)
             print("\nПроверьте:")
             print("1. Правильность ID таблицы в .env файле (GOOGLE_SHEETS_ID)")
             print("   ID можно взять из URL таблицы: https://docs.google.com/spreadsheets/d/ID_ТАБЛИЦЫ/edit")
@@ -66,7 +86,9 @@ def save_form_to_sheets(spreadsheet_id: str, form_data: dict, user_id: int):
                 print("2. Поделитесь таблицей с email сервисного аккаунта из credentials.json")
             return False
         except Exception as e:
-            print(f"Ошибка при открытии таблицы: {e}")
+            error_msg = f"Ошибка при открытии таблицы: {e}"
+            logger.error(error_msg, exc_info=True)
+            print(error_msg)
             return False
         
         # Получаем первый лист (или лист "Анкеты" если есть)
@@ -104,19 +126,28 @@ def save_form_to_sheets(spreadsheet_id: str, form_data: dict, user_id: int):
             row_data = row_data[:14]
         
         # Добавляем строку в таблицу
+        logger.info(f"Добавление строки в таблицу. Данные: {len(row_data)} колонок")
         worksheet.append_row(row_data)
         
-        print(f"Данные успешно записаны в Google Sheets для пользователя {user_id}")
+        success_msg = f"Данные успешно записаны в Google Sheets для пользователя {user_id}"
+        logger.info(success_msg)
+        print(success_msg)
         return True
     except gspread.exceptions.APIError as e:
-        print(f"Ошибка API Google Sheets: {e}")
+        error_msg = f"Ошибка API Google Sheets: {e}"
+        logger.error(error_msg, exc_info=True)
+        print(error_msg)
         print("Возможные причины:")
         print("1. Сервисный аккаунт не имеет доступа к таблице")
         print("2. Неправильный ID таблицы")
         print("3. Таблица была удалена или перемещена")
+        print("4. Превышена квота API (100 запросов в 100 секунд на пользователя)")
+        print("5. Истек срок действия credentials.json")
         return False
     except Exception as e:
-        print(f"Ошибка при записи в Google Sheets: {e}")
+        error_msg = f"Ошибка при записи в Google Sheets: {e}"
+        logger.error(error_msg, exc_info=True)
+        print(error_msg)
         import traceback
         traceback.print_exc()
         return False

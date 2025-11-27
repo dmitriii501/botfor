@@ -238,6 +238,92 @@ sudo crontab -u bot -e
 0 3 * * * cd /opt/anketa-bot && git pull origin main && bash scripts/post-update.sh
 ```
 
+## Диагностика проблем с Google Sheets
+
+Если таблица не обновляется после отправки анкеты:
+
+### 1. Проверьте логи бота
+
+```bash
+# Просмотр логов в реальном времени
+journalctl -u telegram-anketa-bot.service -f
+
+# Или просмотр файла логов
+tail -f /opt/anketa-bot/bot.log
+```
+
+Ищите строки с:
+- "Ошибка при сохранении в Google Sheets"
+- "Ошибка API Google Sheets"
+- "GOOGLE_SHEETS_ID не установлен"
+
+### 2. Запустите скрипт диагностики
+
+```bash
+cd /opt/anketa-bot
+sudo -u bot python3 scripts/check_google_sheets.py
+```
+
+Скрипт проверит:
+- Наличие GOOGLE_SHEETS_ID в .env
+- Наличие credentials.json
+- Подключение к Google Sheets API
+- Доступ к таблице
+- Наличие листа "Анкеты"
+
+### 3. Проверьте частые проблемы
+
+**Проблема: Превышена квота API**
+- Google Sheets API имеет лимит: 100 запросов в 100 секунд на пользователя
+- Решение: Подождите несколько минут и попробуйте снова
+
+**Проблема: Сервисный аккаунт не имеет доступа**
+```bash
+# Узнайте email сервисного аккаунта
+cd /opt/anketa-bot
+sudo -u bot python3 -c "from google_sheets import get_service_account_email; print(get_service_account_email())"
+
+# Затем поделитесь таблицей с этим email на Google Drive
+```
+
+**Проблема: Истек срок действия credentials.json**
+- Скачайте новый ключ из Google Cloud Console
+- Замените файл credentials.json
+
+**Проблема: Неправильный GOOGLE_SHEETS_ID**
+- Проверьте ID в .env файле
+- ID берется из URL: `https://docs.google.com/spreadsheets/d/ID_ТАБЛИЦЫ/edit`
+
+### 4. Ручная проверка записи
+
+```bash
+cd /opt/anketa-bot
+sudo -u bot python3
+```
+
+```python
+from utils import load_form_data
+from google_sheets import save_form_to_sheets
+from config import GOOGLE_SHEETS_ID
+
+# Загрузите последнюю анкету (замените USER_ID на реальный)
+user_id = USER_ID  # Замените на реальный ID пользователя
+form_data = load_form_data(user_id)
+
+# Попробуйте сохранить
+result = save_form_to_sheets(GOOGLE_SHEETS_ID, form_data, user_id)
+print(f"Результат: {result}")
+```
+
+### 5. Проверка базы данных
+
+Проверьте, какие анкеты не были отправлены:
+
+```bash
+cd /opt/anketa-bot
+sudo -u bot sqlite3 data/anketa.db "SELECT id, user_id, sent_to_sheets, filled_at FROM forms WHERE sent_to_sheets = 0 ORDER BY filled_at DESC LIMIT 10;"
+```
+
 ## Откат к предыдущей версии
 
 Если новая версия работает некорректно:

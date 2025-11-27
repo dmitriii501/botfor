@@ -21,12 +21,26 @@ def save_form_data(user_id: int, data: dict, save_to_sheets: bool = False):
     # Если нужно отправить в Google Sheets
     if save_to_sheets and GOOGLE_SHEETS_ID:
         try:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Попытка сохранить анкету {form_id} пользователя {user_id} в Google Sheets")
             success = save_form_to_sheets(GOOGLE_SHEETS_ID, data, user_id)
             if success:
                 from database import mark_as_sent
                 mark_as_sent(form_id)
+                logger.info(f"Анкета {form_id} успешно отправлена в Google Sheets и отмечена как отправленная")
+            else:
+                logger.warning(f"Не удалось сохранить анкету {form_id} в Google Sheets")
         except Exception as e:
-            print(f"Ошибка при сохранении в Google Sheets: {e}")
+            import logging
+            logger = logging.getLogger(__name__)
+            error_msg = f"Ошибка при сохранении в Google Sheets: {e}"
+            logger.error(error_msg, exc_info=True)
+            print(error_msg)
+    elif save_to_sheets and not GOOGLE_SHEETS_ID:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"GOOGLE_SHEETS_ID не установлен, пропуск сохранения в Google Sheets для анкеты {form_id}")
     
     return form_id
 
