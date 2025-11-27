@@ -3,8 +3,29 @@
 import sys
 import os
 
+# Определяем корневую директорию проекта
+REPO_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+VENV_DIR = os.path.join(REPO_DIR, 'venv')
+
+# Активируем виртуальное окружение если оно существует
+if os.path.exists(VENV_DIR):
+    venv_python = os.path.join(VENV_DIR, 'bin', 'python3')
+    if os.path.exists(venv_python) and sys.executable != venv_python:
+        # Перезапускаем скрипт с Python из venv
+        os.execv(venv_python, [venv_python] + sys.argv)
+    
+    # Добавляем venv в путь для импортов
+    import glob
+    venv_site_packages = os.path.join(VENV_DIR, 'lib', 'python3.*', 'site-packages')
+    site_packages = glob.glob(venv_site_packages)
+    if site_packages:
+        sys.path.insert(0, site_packages[0])
+
 # Добавляем корневую директорию в путь
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, REPO_DIR)
+
+# Меняем рабочую директорию на корневую
+os.chdir(REPO_DIR)
 
 from config import GOOGLE_SHEETS_ID
 from google_sheets import get_sheets_client, get_service_account_email, get_headers

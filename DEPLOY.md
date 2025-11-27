@@ -259,9 +259,22 @@ tail -f /opt/anketa-bot/bot.log
 
 ### 2. Запустите скрипт диагностики
 
+**Вариант 1: Через виртуальное окружение (рекомендуется)**
+```bash
+cd /opt/anketa-bot
+sudo -u bot bash -c "source venv/bin/activate && python scripts/check_google_sheets.py"
+```
+
+**Вариант 2: Прямой запуск (скрипт автоматически активирует venv)**
 ```bash
 cd /opt/anketa-bot
 sudo -u bot python3 scripts/check_google_sheets.py
+```
+
+**Вариант 3: Через Python из venv напрямую**
+```bash
+cd /opt/anketa-bot
+sudo -u bot venv/bin/python3 scripts/check_google_sheets.py
 ```
 
 Скрипт проверит:
